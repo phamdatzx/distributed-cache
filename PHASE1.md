@@ -31,7 +31,7 @@ Pluggable store: values live inside the policy. LRU and future LFU both implemen
 - [x] `NewCache` / `NewCacheWithOptions` (default LRU; injectable policy for LFU later)
 - [x] `Set` / `Get` / `Delete` / `Len`
 - [x] Passive TTL: expired keys deleted on `Get`
-- [ ] Active TTL janitor (`time.Ticker` + clean shutdown / `Close`)
+- [x] Active TTL janitor (`time.Ticker` + clean shutdown / `Close`)
 
 ---
 
@@ -39,7 +39,7 @@ Pluggable store: values live inside the policy. LRU and future LFU both implemen
 - [x] `TestCacheGetSet`
 - [x] `TestCacheEviction`
 - [x] `TestCacheTTLPassive`
-- [ ] `TestCacheTTLActive` (needs janitor)
+- [x] `TestCacheTTLActive` (needs janitor)
 - [ ] `TestCacheConcurrency` with `go test -race ./internal/cache/...`
 
 ---

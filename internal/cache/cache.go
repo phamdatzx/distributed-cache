@@ -22,11 +22,18 @@ func (i Item) Expired() bool {
 type Options struct {
 	MaxEntries int
 	Policy     eviction.Policy // if nil, defaults to LRU with MaxEntries
+	// CleanupInterval, when > 0, starts a background janitor that periodically
+	// sweeps expired entries. Call Close to stop it.
+	CleanupInterval time.Duration
 }
 
 type Cache struct {
 	mu     sync.Mutex
 	policy eviction.Policy
+
+	stop      chan struct{} // closed by Close to signal the janitor; nil if no janitor
+	done      chan struct{} // closed by the janitor on exit, so Close can wait for it
+	closeOnce sync.Once
 }
 
 // NewCache creates a cache with an LRU policy of the given capacity.
@@ -45,7 +52,58 @@ func NewCacheWithOptions(opts Options) (*Cache, error) {
 		}
 		policy = lru
 	}
-	return &Cache{policy: policy}, nil
+	c := &Cache{policy: policy}
+	if opts.CleanupInterval > 0 {
+		c.stop = make(chan struct{})
+		c.done = make(chan struct{})
+		go c.runJanitor(opts.CleanupInterval)
+	}
+	return c, nil
+}
+
+// runJanitor sweeps expired entries every interval until Close is called.
+func (c *Cache) runJanitor(interval time.Duration) {
+	defer close(c.done)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			c.deleteExpired()
+		case <-c.stop:
+			return
+		}
+	}
+}
+
+// deleteExpired removes every entry whose TTL has elapsed. It uses Peek so the
+// eviction policy's recency/frequency stats are left untouched.
+func (c *Cache) deleteExpired() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	// Keys returns a snapshot slice, so deleting mid-iteration is safe.
+	for _, k := range c.policy.Keys() {
+		raw, ok := c.policy.Peek(k)
+		if !ok {
+			continue
+		}
+		if item, ok := raw.(Item); ok && item.Expired() {
+			c.policy.Delete(k)
+		}
+	}
+}
+
+// Close stops the background janitor, if one is running. It is idempotent and
+// safe to call on a cache created without CleanupInterval. The cache remains
+// readable after Close; entries are simply no longer swept actively.
+func (c *Cache) Close() {
+	c.closeOnce.Do(func() {
+		if c.stop == nil {
+			return
+		}
+		close(c.stop)
+		<-c.done
+	})
 }
 
 func (c *Cache) Set(key string, value any, ttl time.Duration) {

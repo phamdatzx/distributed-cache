@@ -55,6 +55,40 @@ func TestCacheTTLPassive(t *testing.T) {
 	}
 }
 
+func TestCacheTTLActive(t *testing.T) {
+	c, err := NewCacheWithOptions(Options{MaxEntries: 10, CleanupInterval: 10 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+
+	c.Set("k", "v", 20*time.Millisecond)
+	// Wait for the entry to expire and the janitor to run at least once.
+	// Len is not read here to avoid a Get, so this only passes if the janitor
+	// actively removed the key.
+	time.Sleep(60 * time.Millisecond)
+	if c.Len() != 0 {
+		t.Fatalf("Len = %d; want 0 after active TTL sweep", c.Len())
+	}
+}
+
+func TestCacheCloseIdempotent(t *testing.T) {
+	c, err := NewCacheWithOptions(Options{MaxEntries: 10, CleanupInterval: 10 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Close()
+	c.Close() // must not panic or block
+}
+
+func TestCacheCloseNoJanitor(t *testing.T) {
+	c, err := NewCache(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Close() // safe no-op when no janitor was started
+}
+
 func TestCacheDelete(t *testing.T) {
 	c, err := NewCache(10)
 	if err != nil {
