@@ -14,15 +14,15 @@ flags with env-var fallback; a `pkg/client` is deferred to Phase 3.
 
 Line-based inline commands, `\r\n`-terminated. A RESP-subset parser is a Phase 8 stretch.
 
-- [ ] Request parse: read a line, split on spaces into `[]string` (verb + args).
+- [x] Request parse: read a line, split on spaces into `[]string` (verb + args).
       Documented limitation: values cannot contain spaces yet.
-- [ ] Response writers, RESP-flavored subset:
-  - [ ] Simple string `+OK\r\n`, `+PONG\r\n`
-  - [ ] Bulk string `$<n>\r\n<bytes>\r\n` (GET hit)
-  - [ ] Null bulk `$-1\r\n` (GET miss)
-  - [ ] Integer `:<n>\r\n` (DEL count)
-  - [ ] Error `-ERR <message>\r\n` (unknown verb, arity, bad EX)
-- [ ] Unit tests: round-trip each type; malformed input → error.
+- [x] Response writers, RESP-flavored subset:
+  - [x] Simple string `+OK\r\n`, `+PONG\r\n`
+  - [x] Bulk string `$<n>\r\n<bytes>\r\n` (GET hit)
+  - [x] Null bulk `$-1\r\n` (GET miss)
+  - [x] Integer `:<n>\r\n` (DEL count)
+  - [x] Error `-ERR <message>\r\n` (unknown verb, arity, bad EX)
+- [x] Unit tests: round-trip each type; malformed input → error.
 
 ### 2. Command Set (`internal/server/commands.go`)
 
@@ -35,57 +35,57 @@ Line-based inline commands, `\r\n`-terminated. A RESP-subset parser is a Phase 8
 | `STATS` | — | bulk (counters) | server counters |
 | `QUIT`  | — | `+OK` then close | — |
 
-- [ ] Arity + `EX` validation → `-ERR`; verb match case-insensitive.
+- [x] Arity + `EX` validation → `-ERR`; verb match case-insensitive.
 
 ### 3. TCP Server (`internal/server/server.go`)
 
-- [ ] `Server` struct: `*cache.Cache`, `*slog.Logger`, `net.Listener`, `sync.WaitGroup`
+- [x] `Server` struct: `*cache.Cache`, `*slog.Logger`, `net.Listener`, `sync.WaitGroup`
       (in-flight conns), `atomic` counters (commands, active conns, errors), `done` chan.
-- [ ] `New(c *cache.Cache, logger *slog.Logger) *Server`
-- [ ] `ListenAndServe(addr string) error` — bind, accept loop, one goroutine per conn.
-- [ ] `handleConn` — `bufio.Reader`/`Writer` loop: parse → dispatch → write; break on
+- [x] `New(c *cache.Cache, logger *slog.Logger) *Server`
+- [x] `ListenAndServe(addr string) error` — bind, accept loop, one goroutine per conn.
+- [x] `handleConn` — `bufio.Reader`/`Writer` loop: parse → dispatch → write; break on
       `QUIT`, EOF, or write error; always close + `wg.Done` + decrement active count.
-- [ ] `Shutdown(ctx context.Context) error` — close listener (unblocks `Accept`), then
+- [x] `Shutdown(ctx context.Context) error` — close listener (unblocks `Accept`), then
       `wg.Wait` bounded by `ctx`; existing connections drain, new ones rejected.
-- [ ] Accept loop ignores `net.ErrClosed` after shutdown; logs other accept errors.
+- [x] Accept loop ignores `net.ErrClosed` after shutdown; logs other accept errors.
 
 ### 4. Wire-up (`cmd/cache/main.go`)
 
-- [ ] Delete the `SafeCounter` demo.
-- [ ] Config: `flag` vars with defaults from `envOr(key, fallback)`:
+- [x] Delete the `SafeCounter` demo.
+- [x] Config: `flag` vars with defaults from `envOr(key, fallback)`:
       `-addr`/`CACHE_ADDR` (`:6380`), `-max-entries`/`CACHE_MAX_ENTRIES` (`1024`),
       `-cleanup-interval`/`CACHE_CLEANUP_INTERVAL` (`1m`; `0` disables janitor).
-- [ ] Build `cache.NewCacheWithOptions`, `slog.NewTextHandler(os.Stderr, ...)`.
-- [ ] `signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)`; on cancel call
+- [x] Build `cache.NewCacheWithOptions`, `slog.NewTextHandler(os.Stderr, ...)`.
+- [x] `signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)`; on cancel call
       `srv.Shutdown(timeoutCtx)` then `c.Close()`.
-- [ ] Non-zero exit on fatal listen error.
+- [x] Non-zero exit on fatal listen error.
 
 ### 5. Observability (`log/slog`)
 
-- [ ] Structured logs: server start (addr, max-entries), shutdown (drained conn count),
+- [x] Structured logs: server start (addr, max-entries), shutdown (drained conn count),
       per-command errors. Connection open/close at `Debug`.
-- [ ] Counters surfaced via `STATS`: total commands, active connections, error count.
+- [x] Counters surfaced via `STATS`: total commands, active connections, error count.
 
 ### 6. Testing & Validation (`internal/server/*_test.go`)
 
-- [ ] `protocol_test.go`: parse + writer round-trips, malformed lines.
-- [ ] `server_test.go` with a raw `net.Dial` helper on `127.0.0.1:0`:
-  - [ ] `TestServerPing`
-  - [ ] `TestServerSetGet`
-  - [ ] `TestServerGetMiss` (null bulk)
-  - [ ] `TestServerDel` (`:1` then `:0`)
-  - [ ] `TestServerSetEX` — set with `EX`, wait, `GET` → null (passive expiry path)
-  - [ ] `TestServerUnknownCommand` / arity errors → `-ERR`
-  - [ ] `TestServerConcurrentClients` under `go test -race`
-  - [ ] `TestServerGracefulShutdown` — in-flight request completes, `Accept` stops
-- [ ] `go test -race ./...`, `go vet ./...`
+- [x] `protocol_test.go`: parse + writer round-trips, malformed lines.
+- [x] `server_test.go` with a raw `net.Dial` helper on `127.0.0.1:0`:
+  - [x] `TestServerPing`
+  - [x] `TestServerSetGet`
+  - [x] `TestServerGetMiss` (null bulk)
+  - [x] `TestServerDel` (`:1` then `:0`)
+  - [x] `TestServerSetEX` — set with `EX`, wait, `GET` → null (passive expiry path)
+  - [x] `TestServerUnknownCommand` / arity errors → `-ERR`
+  - [x] `TestServerConcurrentClients` under `go test -race`
+  - [x] `TestServerGracefulShutdown` — in-flight request completes, `Accept` stops
+- [x] `go test -race ./...`, `go vet ./...`
 
 ### 7. Docs
 
-- [ ] `README.md`: replace the false "Run the Skeleton Server" section with real
+- [x] `README.md`: replace the false "Run the Skeleton Server" section with real
       `go run ./cmd/cache` usage + a `nc localhost 6380` transcript.
-- [ ] `ROADMAP.md`: Phase 2 status → In progress / Done as work lands.
-- [ ] `CLAUDE.md`: new `internal/server` layer in Architecture; `go run` no longer a
+- [x] `ROADMAP.md`: Phase 2 status → In progress / Done as work lands.
+- [x] `CLAUDE.md`: new `internal/server` layer in Architecture; `go run` no longer a
       demo; add `nc` / protocol notes.
 
 ---

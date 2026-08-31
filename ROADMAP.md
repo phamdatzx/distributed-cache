@@ -11,15 +11,15 @@ A phased roadmap to design, build, and productionize a high-performance distribu
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 0 — Foundation | 🟡 Partial | Go module, layout, and docs exist; CI/linting not yet set up |
-| 1 — Core Cache | 🟡 In progress | Basic `Get`/`Set` with TTL check on read; no LRU, janitor, tests, or benchmarks yet |
-| 2 — Network Layer | ⬜ Not started | `main.go` is still a concurrency demo |
+| 1 — Core Cache | 🟡 In progress | LRU, TTL (passive + janitor), and tests done; LFU, concurrency test, and benchmarks pending |
+| 2 — Network Layer | 🟢 Done | RESP-flavored TCP server (PING/GET/SET/DEL/STATS/QUIT) with graceful shutdown |
 | 3 — Clustering | ⬜ Not started | — |
 | 4 — Discovery | ⬜ Not started | — |
 | 5 — Replication | ⬜ Not started | — |
 | 6 — Durability | ⬜ Not started | — |
 | 7 — Production | ⬜ Not started | — |
 
-**Suggested focus now:** Finish Phase 1 (LRU eviction, active TTL cleanup, tests, benchmarks). See [PHASE1.md](./PHASE1.md).
+**Suggested focus now:** Finish the remaining Phase 1 items (LFU, concurrency test, benchmarks), then start Phase 3. See [PHASE1.md](./PHASE1.md).
 
 ---
 
